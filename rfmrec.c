@@ -32,12 +32,12 @@ void sig_handler(int signum)
     running = 0;
 }
 
-void uploadValue(CURL* curl, short value)
+void uploadValue(CURL* curl,char* name, short value)
 {
     char buf[1024];
     CURLcode res;
    
-    snprintf(buf,1024,"http://emoncms.org/input/post.json?json={temp:%d}&apikey=add1959dc146578073051ade4f2b7e1c",value);
+    snprintf(buf,1024,"http://emoncms.org/input/post.json?json={%s:%d}&apikey=add1959dc146578073051ade4f2b7e1c",name,value);
     curl_easy_setopt(curl, CURLOPT_URL, buf);
     res = curl_easy_perform(curl);
     if(res != CURLE_OK){
@@ -120,9 +120,9 @@ int main(int argc, char** argv)
                 if(curl) {
                     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
                     
-                    uploadValue(curl, (*payload).temp);
-                    uploadValue(curl, (*payload).light);
-                    uploadValue(curl, (*payload).supplyV);
+                    uploadValue(curl,"temp", (*payload).temp);
+                    uploadValue(curl,"light", (*payload).light);
+                    uploadValue(curl,"volts", (*payload).supplyV);
                     
                     curl_easy_cleanup(curl);
                 }
