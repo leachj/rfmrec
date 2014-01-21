@@ -15,6 +15,8 @@
 #define JEENODE_ID      2
 #define JEENODE_GROUP      210
 
+#define EMONCMS_API_KEY "add1959dc146578073051ade4f2b7e1c"
+
 #define RF12_MAX_RLEN   128
 #define RF12_MAX_SLEN   66
 
@@ -37,7 +39,7 @@ void uploadValue(CURL* curl,char* name, short value)
     char buf[1024];
     CURLcode res;
    
-    snprintf(buf,1024,"http://emoncms.org/input/post.json?json={%s:%d}&apikey=add1959dc146578073051ade4f2b7e1c",name,value);
+    snprintf(buf,1024,"http://emoncms.org/input/post.json?json={%s:%d}&apikey=%s",name,value, EMONCMS_API_KEY);
     curl_easy_setopt(curl, CURLOPT_URL, buf);
     res = curl_easy_perform(curl);
     if(res != CURLE_OK){
@@ -56,7 +58,7 @@ int main(int argc, char** argv)
     
     devname = RF12_DEV;
     
-    rfm12_fd = open(RF12_TESTS_DEV, O_RDWR);
+    rfm12_fd = open(devname, O_RDWR);
     if (rfm12_fd < 0) {
         printf("\nfailed to open %s: %s.\n\n", devname, strerror(errno));
         return rfm12_fd;
