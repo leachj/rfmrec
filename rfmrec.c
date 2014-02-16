@@ -15,7 +15,10 @@
 #define JEENODE_ID      2
 #define JEENODE_GROUP      210
 
-#define EMONCMS_API_KEY "add1959dc146578073051ade4f2b7e1c"
+// set the URL to make request to, This can be direct to emoncms or to something like nodered
+// for emoncms use this: define URL "http://emoncms.org/input/post.json?json={%s:%d}&apikey=<API KEY>"
+// point to node red
+#define URL "http://192.168.1.70:1880/sensor?type=%s&value=%d"
 
 #define RF12_MAX_RLEN   128
 #define RF12_MAX_SLEN   66
@@ -24,6 +27,7 @@ typedef struct _Payload {
     short temp;	// Temperature reading
     short light;	// Light reading
     short supplyV;	// Supply voltage
+    short pir;	// Supply voltage
 } Payload;
 
 static volatile int running;
@@ -39,7 +43,7 @@ void uploadValue(CURL* curl,char* name, short value)
     char buf[1024];
     CURLcode res;
    
-    snprintf(buf,1024,"http://emoncms.org/input/post.json?json={%s:%d}&apikey=%s",name,value, EMONCMS_API_KEY);
+    snprintf(buf,1024,URL,name,value);
     curl_easy_setopt(curl, CURLOPT_URL, buf);
     res = curl_easy_perform(curl);
     if(res != CURLE_OK){
@@ -114,7 +118,7 @@ int main(int argc, char** argv)
                 Payload    *payload;
                 payload = (Payload *) &obuf[2];
                 
-                printf("temp is %d light is %d voltage is %d\n",(*payload).temp, (*payload).light, (*payload).supplyV);
+                printf("temp is %d light is %d pir is %d voltage is %d\n",(*payload).temp, (*payload).light,(*payload).pir, (*payload).supplyV);
                 
                 CURL *curl;
                 
@@ -125,6 +129,7 @@ int main(int argc, char** argv)
                     uploadValue(curl,"temp", (*payload).temp);
                     uploadValue(curl,"light", (*payload).light);
                     uploadValue(curl,"volts", (*payload).supplyV);
+                    uploadValue(curl,"pir", (*payload).pir);
                     
                     curl_easy_cleanup(curl);
                 }
