@@ -18,7 +18,7 @@
 // set the URL to make request to, This can be direct to emoncms or to something like nodered
 // for emoncms use this: define URL "http://emoncms.org/input/post.json?json={%s:%d}&apikey=<API KEY>"
 // point to node red
-#define URL "http://192.168.1.70:1880/sensor?type=%s&value=%d"
+#define URL "http://192.168.1.70:1880/sensor?node=%d&type=%s&value=%d"
 
 #define RF12_MAX_RLEN   128
 #define RF12_MAX_SLEN   66
@@ -38,12 +38,12 @@ void sig_handler(int signum)
     running = 0;
 }
 
-void uploadValue(CURL* curl,char* name, short value)
+void uploadValue(CURL* curl,int node, char* name, short value)
 {
     char buf[1024];
     CURLcode res;
    
-    snprintf(buf,1024,URL,name,value);
+    snprintf(buf,1024,URL,node,name,value);
     curl_easy_setopt(curl, CURLOPT_URL, buf);
     res = curl_easy_perform(curl);
     if(res != CURLE_OK){
@@ -126,10 +126,10 @@ int main(int argc, char** argv)
                 if(curl) {
                     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
                     
-                    uploadValue(curl,"temp", (*payload).temp);
-                    uploadValue(curl,"light", (*payload).light);
-                    uploadValue(curl,"volts", (*payload).supplyV);
-                    uploadValue(curl,"pir", (*payload).pir);
+                    uploadValue(curl,jee_addr, "temp", (*payload).temp);
+                    uploadValue(curl,jee_addr, "light", (*payload).light);
+                    uploadValue(curl,jee_addr, "volts", (*payload).supplyV);
+                    uploadValue(curl,jee_addr, "pir", (*payload).pir);
                     
                     curl_easy_cleanup(curl);
                 }
