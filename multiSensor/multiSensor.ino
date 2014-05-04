@@ -1,4 +1,3 @@
-
 //----------------------------------------------------------------------------------------------------------------------
 // TinyTX - An ATtiny84 and RFM12B Wireless Temperature Sensor Node
 // By Nathan Chantrell. For hardware design see http://nathan.chantrell.net/tinytx
@@ -20,21 +19,21 @@
 
 ISR(WDT_vect) { Sleepy::watchdogEvent(); } // interrupt handler for JeeLabs Sleepy power saving
 
-#define myNodeID 3        // RF12 node ID in the range 1-30
+#define myNodeID 4        // RF12 node ID in the range 1-30
 #define network 210       // RF12 Network group
 #define freq RF12_868MHZ  // Frequency of RFM12B module
 
 #define USE_ACK           // Enable ACKs, comment out to disable
-#define RETRY_PERIOD 5    // How soon to retry (in seconds) if ACK didn't come in
+#define RETRY_PERIOD 1// How soon to retry (in seconds) if ACK didn't come in
 #define RETRY_LIMIT 5     // Maximum number of times to retry
-#define ACK_TIME 10       // Number of milliseconds to wait for an ack
+#define ACK_TIME 500       // Number of milliseconds to wait for an ack
 
 #define ONE_WIRE_BUS 10   // DS18B20 Temperature sensor is connected on D10/ATtiny pin 13
 #define ONE_WIRE_POWER 9  // DS18B20 Power pin is connected on D9/ATtiny pin 12
 
-#define PIR_PIN 7 // D7
-#define LDR_POWER 0
-#define LDR_PIN 7 // A7
+#define PIR_PIN 0 // D0
+#define LDR_POWER 7
+#define LDR_PIN 2
 
 OneWire oneWire(ONE_WIRE_BUS); // Setup a oneWire instance
 
@@ -52,10 +51,6 @@ DallasTemperature sensors(&oneWire); // Pass our oneWire reference to Dallas Tem
  } Payload;
 
  Payload tinytx;
- 
- boolean ignore = false;
- int lastPirState = -1;
- int pirState = -1;
 
 // Wait a few milliseconds for proper ACK
  #ifdef USE_ACK
@@ -122,19 +117,9 @@ DallasTemperature sensors(&oneWire); // Pass our oneWire reference to Dallas Tem
    return result;
 } 
 
-//void wakeUp() {
-//  pirState = digitalRead(PIR_PIN); // Read the state of the reed switch
-//  if(pirState == lastPirState){
-//    ignore = true;
-//  } else {
-//    ignore = false; 
-//  }
-//  
-//  delay(100);
-//  lastPirState = pirState;
-//
-//
-//}
+void wakeUp() {
+
+}
 
 void setup() {
 
@@ -143,10 +128,9 @@ void setup() {
 
   pinMode(ONE_WIRE_POWER, OUTPUT); // set power pin for DS18B20 to output
   
-  //pinMode(PIR_PIN, INPUT);                   //set the pin to input
-  //pinMode(PIR_PIN, INPUT_PULLUP);
+  pinMode(PIR_PIN, INPUT);                   //set the pin to input
 
-  //attachPcInterrupt(PIR_PIN,wakeUp,CHANGE); // attach a PinChange Interrupt on the falling edge
+  attachPcInterrupt(PIR_PIN,wakeUp,CHANGE); // attach a PinChange Interrupt on the falling edge
   
     
   pinMode(LDR_POWER, OUTPUT); // set D7 to output
@@ -156,15 +140,13 @@ void setup() {
 
 void loop() {
   
-
-    //if(!ignore) {
-      
+    tinytx.pir = digitalRead(PIR_PIN);
+    
+  
     digitalWrite(LDR_POWER, HIGH);   // turn the LED on (HIGH is the voltage level)
     digitalWrite(ONE_WIRE_POWER, HIGH); // turn DS18B20 sensor on
     delay(10); // The above doesn't seem to work for everyone (why?)
 
-  
-    tinytx.pir = (pirState == LOW)?0:1;
 
     bitClear(PRR, PRADC); ADCSRA |= bit(ADEN); // Enable the ADC
     tinytx.light = 1024-analogRead(LDR_PIN);   // read the input pin (A2)
@@ -174,7 +156,6 @@ void loop() {
     sensors.begin(); //start up temp sensor
     sensors.requestTemperatures(); // Get the temperature
     tinytx.temp=(sensors.getTempCByIndex(0)*100); // Read first sensor and convert to integer, reversed at receiving end
-    //tinytx.temp=getTemp();
   
     digitalWrite(ONE_WIRE_POWER, LOW); // turn DS18B20 off
   
@@ -183,59 +164,9 @@ void loop() {
     rfwrite(); // Send data via RF 
     digitalWrite(LDR_POWER, LOW);
 
-
-
     Sleepy::loseSomeTime(60000); //JeeLabs power save function: enter low power mode for 60 seconds (valid range 16-65000 ms)
-  
-    //ignore = false;
-    
-    //}
 
 
 }
 
-//int getTemp(){
-// //returns the temperature from one DS18S20 in DEG Celsius
-//
-// byte data[12];
-// byte addr[8];
-//
-// if ( !ds.search(addr)) {
-//   //no more sensors on chain, reset search
-//   ds.reset_search();
-//   return -1000;
-// }
-//
-// if ( OneWire::crc8( addr, 7) != addr[7]) {
-//   return -1000;
-// }
-//
-// if ( addr[0] != 0x10 && addr[0] != 0x28) {
-//   return -1000;
-// }
-//
-// ds.reset();
-// ds.select(addr);
-// ds.write(0x44,1); // start conversion, with parasite power on at the end
-//
-// byte present = ds.reset();
-// ds.select(addr);  
-// ds.write(0xBE); // Read Scratchpad
-//
-// 
-// for (int i = 0; i < 9; i++) { // we need 9 bytes
-//  data[i] = ds.read();
-// }
-// 
-// ds.reset_search();
-// 
-// byte MSB = data[1];
-// byte LSB = data[0];
-//
-// float tempRead = ((MSB << 8) | LSB); //using two's compliment
-// float TemperatureSum = tempRead / 16;
-// 
-// return TemperatureSum * 100;
-// 
-//}
 
